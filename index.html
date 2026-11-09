@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CycleWake">
+  <meta name="theme-color" content="#0B0E14">
+  
+  <!-- App Icon for iOS Home Screen (OLED Indigo & Cyan Moon) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%230B0E14'/%3E%3Cpath d='M280 80C170 80 80 170 80 280s90 200 200 200c70 0 132-36 168-91-88-8-158-82-158-173 0-58 29-110 74-142-26-9-54-14-84-14z' fill='url(%23g)'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366F1'/%3E%3Cstop offset='100%25' stop-color='%2306B6D4'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E">
+  
+  <title>CycleWake</title>
+  <style>
+    :root {
+      --bg: #0B0E14;
+      --card: #131823;
+      --card-sec: #1A202E;
+      --border: #232B3E;
+      --indigo: #6366F1;
+      --cyan: #06B6D4;
+      --emerald: #10B981;
+      --rose: #F43F5E;
+      --text: #F9FAFB;
+      --text-sub: #9CA3AF;
+      --text-muted: #6B7280;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 24px) 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    header {
+      padding: 12px 4px 6px 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--indigo), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand p {
+      font-size: 12px;
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+    .segmented-control {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .seg-btn {
+      flex: 1;
+      padding: 10px 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .seg-btn.active {
+      background: var(--card-sec);
+      color: var(--text);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card.selected {
+      border-color: var(--indigo);
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+    }
+    .card.recommended {
+      border-color: var(--emerald);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cycles-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .cycles-title span {
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge.optimal {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge.sufficient {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--cyan);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .badge.extended {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--indigo);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .wake-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+    .wake-time {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .card-footer {
+      font-size: 12px;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+    .time-picker-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .time-picker-box input {
+      background: var(--card-sec);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 10px;
+      outline: none;
+    }
+    .slider-box {
+      background: var(--card-sec);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .slider-header strong {
+      color: var(--cyan);
+    }
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--cyan);
+    }
+    .action-button {
+      background: linear-gradient(135deg, var(--indigo), var(--cyan));
+      border: none;
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 18px;
+      border-radius: 18px;
+      width: 100%;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      margin-top: 10px;
+    }
+    .action-button:active {
+      transform: scale(0.98);
+    }
+    .hypno-bar {
+      display: flex;
+      height: 28px;
+      border-radius: 8px;
+      overflow: hidden;
+      gap: 2px;
+      margin-top: 8px;
+    }
+    .hypno-bar div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>CycleWake</h1>
+        <p>Ultradian Sleep Architecture</p>
+      </div>
+    </header>
+
+    <!-- Mode Selector -->
+    <div class="segmented-control">
+      <button class="seg-btn active" onclick="setMode('now')">🌙 Sleep Now</button>
+      <button class="seg-btn" onclick="setMode('wake')">⏰ Wake At</button>
+      <button class="seg-btn" onclick="setMode('nap')">⚡ Nap</button>
+    </div>
+
+    <!-- Latency Slider -->
+    <div class="slider-box">
+      <div class="slider-header">
+        <span>Sleep Latency (Time to fall asleep):</span>
+        <strong id="latencyLabel">14 min</strong>
+      </div>
+      <input type="range" id="latencySlider" min="5" max="45" value="14" oninput="updateLatency(this.value)">
+    </div>
+
+    <!-- Wake Time Picker (Shown in Wake At mode) -->
+    <div id="wakeTimeSection" class="time-picker-box" style="display: none;">
+      <div>
+        <div class="wake-label">DESIRED WAKE TIME</div>
+        <div style="font-size: 13px; color: var(--text-sub); margin-top: 2px;">Calculates backwards</div>
+      </div>
+      <input type="time" id="targetWakeInput" value="07:00" onchange="render()">
+    </div>
+
+    <!-- Cards Container -->
+    <div id="cardsList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+
+    <!-- Sleep Cycle Educational Visualizer -->
+    <div class="card" style="cursor: default; padding: 14px;">
+      <div style="font-size: 13px; font-weight: 700; color: var(--text);">90-Minute Ultradian Sleep Cycle</div>
+      <div class="hypno-bar">
+        <div style="width: 50%; background: rgba(99, 102, 241, 0.4); color: #fff;">Light (45m)</div>
+        <div style="width: 28%; background: rgba(6, 182, 212, 0.4); color: #fff;">Deep (25m)</div>
+        <div style="width: 22%; background: rgba(16, 185, 129, 0.4); color: #fff;">REM (20m)</div>
+      </div>
+      <div style="font-size: 11px; color: var(--text-sub); margin-top: 6px;">
+        Waking at cycle boundaries eliminates sleep inertia by avoiding abrupt awakenings during Stage 3 Slow-Wave Deep Sleep.
+      </div>
+    </div>
+
+    <!-- Primary Action Buttons -->
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+      <button class="action-button" onclick="openClockApp()">
+        <span id="actionBtnText">⏰ Open Clock & Set Alarm</span>
+      </button>
+      <button onclick="triggerShortcut()" style="background: transparent; border: 1px solid var(--border); color: var(--text-sub); font-size: 13px; font-weight: 600; padding: 12px; border-radius: 14px; cursor: pointer;">
+        ⚡ Or Send to Apple Shortcut (Optional)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'now';
+    let latency = 14;
+    let selectedMinutes = 464;
+    let selectedTimeString = '';
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.seg-btn').forEach((b, i) => {
+        b.classList.toggle('active', (mode === 'now' && i === 0) || (mode === 'wake' && i === 1) || (mode === 'nap' && i === 2));
+      });
+      document.getElementById('wakeTimeSection').style.display = mode === 'wake' ? 'flex' : 'none';
+      render();
+    }
+
+    function updateLatency(val) {
+      latency = parseInt(val);
+      document.getElementById('latencyLabel').textContent = latency + ' min';
+      render();
+    }
+
+    function formatTime(date) {
+      let hours = date.getHours();
+      let minutes = date.getMinutes();
+      let ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      let minStr = minutes < 10 ? '0' + minutes : minutes;
+      return hours + ':' + minStr + ' ' + ampm;
+    }
+
+    function render() {
+      const list = document.getElementById('cardsList');
+      list.innerHTML = '';
+      const now = new Date();
+
+      if (currentMode === 'now') {
+        const cycles = [
+          { c: 5, tag: 'Optimal Rest', badge: 'optimal', rec: true, desc: '5 complete cycles. Ideal balance of deep NREM and cognitive REM recovery.' },
+          { c: 4, tag: 'Sufficient', badge: 'sufficient', rec: false, desc: '4 cycles (6 hrs). Solid baseline; avoids mid-cycle sleep inertia.' },
+          { c: 6, tag: 'Extended', badge: 'extended', rec: false, desc: '6 cycles (9 hrs). Maximum restorative sleep for high physical exertion.' },
+          { c: 3, tag: 'Short Rest', badge: 'sufficient', rec: false, desc: '3 cycles (4.5 hrs). Emergency survival rest.' }
+        ];
+
+        cycles.forEach((item, idx) => {
+          const totalMins = (item.c * 90) + latency;
+          const wakeDate = new Date(now.getTime() + totalMins * 60000);
+          const timeStr = formatTime(wakeDate);
+          const hrs = Math.floor(totalMins / 60);
+          const mins = totalMins % 60;
+          const durStr = `${hrs}h ${mins}m`;
+
+          if (idx === 0) {
+            selectedMinutes = totalMins;
+            selectedTimeString = timeStr;
+            updateBtnText(`Set Alarm for ${timeStr} (${durStr})`);
+          }
+
+          const card = document.createElement('div');
+          card.className = `card ${item.rec ? 'recommended' : ''} ${idx === 0 ? 'selected' : ''}`;
+          card.onclick = () => {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedMinutes = totalMins;
+            selectedTimeString = timeStr;
+            updateBtnText(`Set Alarm for ${timeStr} (${durStr})`);
+          };
+          card.innerHTML = `
+            <div class="card-header">
+              <div class="cycles-title">${item.c} Cycles <span>— ${durStr}</span></div>
+              <div class="badge ${item.badge}">${item.tag}</div>
+            </div>
+            <div>
+              <div class="wake-label">WAKE UP AT</div>
+              <div class="wake-time">${timeStr}</div>
+            </div>
+            <div class="card-footer">${item.desc}</div>
+          `;
+          list.appendChild(card);
+        });
+
+      } else if (currentMode === 'wake') {
+        const timeInput = document.getElementById('targetWakeInput').value;
+        const [targetH, targetM] = timeInput.split(':').map(Number);
+        const targetDate = new Date();
+        targetDate.setHours(targetH, targetM, 0, 0);
+        if (targetDate <= now) {
+          targetDate.setDate(targetDate.getDate() + 1);
+        }
+
+        const cycles = [
+          { c: 5, tag: 'Optimal', badge: 'optimal', rec: true, desc: 'Fall asleep by this time for 5 full cycles.' },
+          { c: 4, tag: 'Sufficient', badge: 'sufficient', rec: false, desc: 'Bedtime for 4 complete cycles.' },
+          { c: 6, tag: 'Extended', badge: 'extended', rec: false, desc: 'Bedtime for 6 complete cycles.' }
+        ];
+
+        cycles.forEach((item, idx) => {
+          const totalMins = (item.c * 90) + latency;
+          const bedDate = new Date(targetDate.getTime() - totalMins * 60000);
+          const bedStr = formatTime(bedDate);
+          const hrs = Math.floor(totalMins / 60);
+          const mins = totalMins % 60;
+
+          if (idx === 0) {
+            updateBtnText(`Set Alarm for ${formatTime(targetDate)}`);
+          }
+
+          const card = document.createElement('div');
+          card.className = `card ${item.rec ? 'recommended' : ''} ${idx === 0 ? 'selected' : ''}`;
+          card.innerHTML = `
+            <div class="card-header">
+              <div class="cycles-title">${item.c} Cycles <span>— Sleep at ${bedStr}</span></div>
+              <div class="badge ${item.badge}">${item.tag}</div>
+            </div>
+            <div>
+              <div class="wake-label">GO TO BED AT</div>
+              <div class="wake-time">${bedStr}</div>
+            </div>
+            <div class="card-footer">Includes ${latency} mins latency. Wakes at ${formatTime(targetDate)}.</div>
+          `;
+          list.appendChild(card);
+        });
+
+      } else if (currentMode === 'nap') {
+        const naps = [
+          { title: '20-min Power Nap', mins: 20, extra: 5, tag: 'Quick Reboot', desc: 'Awakes you prior to Stage 3 Slow-Wave Deep Sleep to prevent grogginess.' },
+          { title: '90-min Full Cycle Nap', mins: 90, extra: 5, tag: 'Full Ultradian', desc: 'One complete ultradian cycle of Light, Deep, and REM sleep.' }
+        ];
+
+        naps.forEach((item, idx) => {
+          const total = item.mins + item.extra;
+          const wakeDate = new Date(now.getTime() + total * 60000);
+          const timeStr = formatTime(wakeDate);
+
+          if (idx === 0) {
+            selectedMinutes = total;
+            selectedTimeString = timeStr;
+            updateBtnText(`Start ${item.mins}-min Nap Timer`);
+          }
+
+          const card = document.createElement('div');
+          card.className = `card ${idx === 0 ? 'selected' : ''}`;
+          card.onclick = () => {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedMinutes = total;
+            selectedTimeString = timeStr;
+            updateBtnText(`Start ${item.mins}-min Nap Timer`);
+          };
+          card.innerHTML = `
+            <div class="card-header">
+              <div class="cycles-title">${item.title}</div>
+              <div class="badge optimal">${item.tag}</div>
+            </div>
+            <div>
+              <div class="wake-label">WAKE UP AT</div>
+              <div class="wake-time">${timeStr}</div>
+            </div>
+            <div class="card-footer">${item.desc} (${total} min timer with 5m latency).</div>
+          `;
+          list.appendChild(card);
+        });
+      }
+    }
+
+    function updateBtnText(text) {
+      document.getElementById('actionBtnText').textContent = text;
+    }
+
+    function openClockApp() {
+      // Direct deep-link into native Apple Clock app timer tab
+      window.location.href = 'clock-timer://';
+    }
+
+    function triggerShortcut() {
+      // Calls Apple Shortcut if user configured StartSleepTimer
+      window.location.href = `shortcuts://run-shortcut?name=StartSleepTimer&input=${selectedMinutes}`;
+    }
+
+    render();
+  </script>
+</body>
+</html>
